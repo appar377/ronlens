@@ -1,0 +1,19 @@
+{
+  "name": "ronlens-foundation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "RONLENS non-visual domain foundation; fictional demo only",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
