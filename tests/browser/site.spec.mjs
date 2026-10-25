@@ -90,3 +90,15 @@ for(const width of [292,320,390,700,701,768,900,901,1126,1440]) test(`all screen
  }
  expect(errors).toEqual([]);
 });
+test('delayed modules expose a loading state and never a wrong-page search input', async({page})=>{
+ let release; const gate=new Promise(resolve=>release=resolve);
+ await page.route('**/dist/web/app.js',async route=>{await gate;await route.continue()});
+ await page.goto('/library',{waitUntil:'commit'});await expect(page.getByRole('status')).toHaveText('ページを読み込んでいます…');await expect(page.getByRole('searchbox')).toHaveCount(0);
+ release();await expect(page.locator('body')).toHaveAttribute('data-ready','true');await page.getByRole('searchbox').fill('資料検索');await page.getByRole('searchbox').press('Enter');await expect(page.locator('.library-card')).toHaveCount(1);
+});
+test('home search waits for its module, and module failure offers retry', async({page})=>{
+ let release; const gate=new Promise(resolve=>release=resolve);
+ await page.route('**/dist/web/home.js',async route=>{await gate;await route.continue()});
+ await page.goto('/',{waitUntil:'commit'});await expect(page.getByRole('searchbox')).toBeDisabled();release();await expect(page.getByRole('searchbox')).toBeEnabled();
+ await page.route('**/dist/web/app.js',route=>route.abort());await page.goto('/library');await expect(page.getByRole('heading',{name:'ページを読み込めませんでした'})).toBeVisible();await expect(page.getByRole('button',{name:'再読み込み'})).toBeVisible();
+});

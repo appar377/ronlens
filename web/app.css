@@ -617,3 +617,7 @@
 @media(max-width:700px) {
   .library-card .result-metadata { margin: 8px 0; }
 }
+
+.app-loading main { max-width: 680px; margin: 15vh auto; padding: 24px; text-align: center; color: var(--navy); }
+.app-loading .brand { justify-content: center; }
+.app-loading p { line-height: 1.8; }
