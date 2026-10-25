@@ -5,7 +5,7 @@ export default defineConfig({
   fullyParallel: true,
   workers: 3,
   use: {
-    baseURL: "http://127.0.0.1:4183",
+    baseURL: "http://127.0.0.1:4184",
     channel: "chrome",
     viewport: { width: 1083, height: 896 },
     locale: "ja-JP",
@@ -15,8 +15,8 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "python3 -m http.server 4183 --bind 127.0.0.1 --directory site",
-    url: "http://127.0.0.1:4183",
+    command: "PORT=4184 node scripts/serve.mjs",
+    url: "http://127.0.0.1:4184",
     reuseExistingServer: true,
   },
 });

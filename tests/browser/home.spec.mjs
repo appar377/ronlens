@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => { await page.goto("/"); });
 test("reference card order, truthful demo and seven hero-only perspectives", async ({ page }) => {
   await expect(page.locator(".paper-card h2")).toHaveText(["資料を探して答えるAI", "意味の近さを測る", "出典で回答を確かめる"]);
   await expect(page.locator(".demo-tag")).toHaveCount(3);
-  await expect(page.locator(".read-unavailable[aria-disabled=true]")).toHaveCount(3);
+  await expect(page.locator(".read-link[href^=\"/paper/\"]")).toHaveCount(3);
   const labels = ["問い", "解決", "しくみ", "根拠", "発見", "活用", "次の疑問"];
   for (const label of labels) {
     await page.getByRole("button", { name: label + "の説明を表示", exact: true }).click();
@@ -19,8 +19,8 @@ test("reference card order, truthful demo and seven hero-only perspectives", asy
 test("search, saved search, reload, browser back and forward", async ({ page }) => {
   const input = page.getByRole("searchbox");
   await input.fill("ベクトル"); await input.press("Enter");
-  await expect(page.locator(".paper-card")).toHaveCount(1);
-  await expect(page.locator(".paper-card h2")).toHaveText("意味の近さを測る");
+  await expect(page.locator(".paper-card")).toHaveCount(2);
+  await expect(page.locator(".paper-card h2", { hasText: "意味の近さを測る" })).toBeVisible();
   await page.getByRole("button", { name: "この検索を保存", exact: true }).click();
   await page.reload();
   await expect(input).toHaveValue("ベクトル");
@@ -68,12 +68,13 @@ test("mobile menu supports keyboard, Escape and search focus", async ({ page }) 
   await expect(page.locator("#main-nav")).toBeVisible();
   await expect(page.locator('[data-view="all"]')).toBeFocused();
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("link", { name: "論文を探す", exact: true })).toBeFocused();
+  await expect(page.locator("#main-nav").getByRole("link", { name: "論文を探す", exact: true })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(menu).toBeFocused();
   await expect(page.locator("#main-nav")).toBeHidden();
-  await menu.click(); await page.getByRole("link", { name: "論文を探す", exact: true }).click();
-  await expect(page.getByRole("searchbox")).toBeFocused();
+  await menu.click(); await page.locator("#main-nav").getByRole("link", { name: "論文を探す", exact: true }).click();
+  await expect(page).toHaveURL(/\/library$/);
+  await expect(page.getByRole("searchbox")).toBeVisible();
   await expect(page.locator("#main-nav")).toBeHidden();
 });
 

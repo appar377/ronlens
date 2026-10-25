@@ -11,7 +11,7 @@ try {
     const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1, locale: "ja-JP", colorScheme: "light", reducedMotion: "reduce" });
     const errors = [];
     page.on("pageerror", error => errors.push(error.message));
-    await page.goto("http://127.0.0.1:4183/", { waitUntil: "networkidle" });
+    await page.goto((process.env.BASE_URL ?? "http://127.0.0.1:4184") + "/", { waitUntil: "networkidle" });
     await page.evaluate(() => document.fonts.ready);
     await page.screenshot({ path: resolve(output, "home-" + name + "-final.png") });
     measurements.push({ name, width, height, dpr: 1, zoom: 1, scroll: [0, 0], state: "empty storage, no query, question selected", errors,

@@ -117,8 +117,8 @@ function render(): void {
       '<div class="paper-art art-' + index + '" aria-hidden="true"></div>' +
       '<p class="paper-eyebrow">' + icon("document") + '<span>論文' + label + '</span><span class="demo-tag">架空デモ</span></p>' +
       '<h2>' + escape(paper.title) + '</h2><p class="paper-summary">' + escape(paper.summary) + '</p>' +
-      '<div class="paper-actions"><span class="read-unavailable" aria-disabled="true">図解から読む ' + icon("arrow") +
-      '<span class="pending">準備中</span></span><button class="bookmark-button" data-paper="' + paper.id +
+      '<div class="paper-actions"><a class="read-link" href="/paper/' + paper.id + '">図解から読む ' + icon("arrow") +
+      '</a><button class="bookmark-button" data-paper="' + paper.id +
       '" aria-label="「' + escape(paper.title) + '」' + (saved ? 'の保存を解除' : 'を保存') +
       '" aria-pressed="' + saved + '">' + icon("bookmark") + '</button></div></article>';
   }).join("");

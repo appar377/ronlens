@@ -7,7 +7,9 @@
   <meta name="description" content="論文を、日本語の図解とことばで。RONLENSの架空論文による操作デモ。">
   <title>RONLENS｜論文をひらく。理解がつながる。</title>
   <link rel="stylesheet" href="/styles.css">
-  <script type="module" src="/dist/web/home.js"></script>
+  <link rel="stylesheet" href="/app.css">
+  <link rel="icon" href="/assets/logo-a.svg" type="image/svg+xml">
+  <script type="module" src="/dist/web/boot.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#search-input">論文の検索へ</a>
@@ -15,8 +17,8 @@
     <a class="brand" href="/" aria-label="RONLENS ホーム"><span class="brand-mark" aria-hidden="true"></span><span>RONLENS</span></a>
     <nav id="main-nav" class="main-nav" aria-label="メインナビゲーション">
       <a href="/" data-view="all" aria-current="page">ホーム</a>
-      <a href="#search-input" data-focus-search>論文を探す</a>
-      <span class="future-nav" aria-disabled="true" title="準備中">つながり<span class="sr-only">（準備中）</span></span>
+      <a href="/library">論文を探す</a>
+      <a href="/network">つながり</a>
       <a href="/?view=saved" data-view="saved">保存<span id="saved-count" class="sr-only"></span></a>
     </nav>
     <div class="header-actions">
@@ -57,7 +59,7 @@
       <div id="empty-state" class="empty-state" hidden></div>
     </section>
   </main>
-  <footer class="site-footer"><p>架空論文の操作デモ <span>/</span> RONLENS（論レンズ）</p><p>論文・概念・引用は創作です。実在する研究の紹介ではありません。</p></footer>
+  <footer class="site-footer"><p class="footer-links"><a href="/library">論文を探す</a><a href="/saved">保存・履歴</a><a href="/help">使い方・このデモについて</a></p><p>架空論文の操作デモ <span>/</span> RONLENS（論レンズ）</p><p>論文・概念・引用は創作です。実在する研究の紹介ではありません。</p></footer>
   <noscript><p class="noscript">検索と保存を使うにはJavaScriptを有効にしてください。このサイトの論文はすべて架空デモです。</p></noscript>
 </body>
 </html>
