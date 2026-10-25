@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#061c3c">
+  <meta name="description" content="論文を、日本語の図解とことばで。RONLENSの架空論文による操作デモ。">
+  <title>RONLENS｜論文をひらく。理解がつながる。</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/dist/web/home.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#search-input">論文の検索へ</a>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="RONLENS ホーム"><span class="brand-mark" aria-hidden="true"></span><span>RONLENS</span></a>
+    <nav id="main-nav" class="main-nav" aria-label="メインナビゲーション">
+      <a href="/" data-view="all" aria-current="page">ホーム</a>
+      <a href="#search-input" data-focus-search>論文を探す</a>
+      <span class="future-nav" aria-disabled="true" title="準備中">つながり<span class="sr-only">（準備中）</span></span>
+      <a href="/?view=saved" data-view="saved">保存<span id="saved-count" class="sr-only"></span></a>
+    </nav>
+    <div class="header-actions">
+      <a class="icon-button" href="#search-input" data-focus-search aria-label="論文を検索"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7.5"/><path d="m16 16 5 5"/></svg></a>
+      <button class="about-button" aria-label="このデモについて" aria-expanded="false" aria-controls="about-note"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="15"/><circle cx="16" cy="12" r="6"/><path d="M5 27c1-9 21-9 22 0"/></svg></button>
+      <button class="menu-button icon-button" aria-label="メニューを開く" aria-expanded="false" aria-controls="main-nav"><svg viewBox="0 0 24 24"><path d="M3 5h18M3 12h18M3 19h18"/></svg></button>
+    </div>
+    <p id="about-note" class="about-note" hidden>架空論文で操作を試せるデモです。実在する研究の紹介ではありません。保存はこのブラウザ内で行います。</p>
+  </header>
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-floor" aria-hidden="true"></div>
+      <div class="floor-reflections" aria-hidden="true"></div>
+      <svg class="light-rays desktop-rays" viewBox="0 0 1083 506" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <svg class="light-rays mobile-rays" viewBox="0 0 335 401" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <span class="incoming-label">論文</span>
+      <div class="prism-crop" role="img" aria-label="ひとつの白い光を七色へ分ける透明なプリズム"></div>
+      <div class="hero-copy">
+        <h1 id="hero-title" tabindex="-1"><span>論文をひらく。</span><span>理解がつながる。</span></h1>
+        <p>図解とことばで、研究の中身へ。</p>
+      </div>
+      <div class="light-doors" aria-label="論文を読む七つの視点"></div>
+      <div id="perspective-note" class="perspective-note"><strong>問い</strong><p>この研究は、何を<br>明らかにしたい？</p></div>
+      <p class="hero-hint"><span></span>触れて、知の入口を探す<span></span></p>
+    </section>
+    <section class="discovery" aria-label="架空論文の検索">
+      <form class="search-form" role="search">
+        <svg class="search-symbol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="m15.5 15.5 6 6"/></svg>
+        <label class="sr-only" for="search-input">論文・キーワードを検索</label>
+        <input id="search-input" type="search" name="q" placeholder="論文・キーワードを検索" maxlength="500" autocomplete="off">
+        <button class="search-submit" type="submit" aria-label="検索する"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></button>
+      </form>
+      <div class="search-caption"><p>たとえば「資料検索」「ベクトル」「出典と照合」など</p><button id="save-search" hidden>この検索を保存</button></div>
+      <div id="saved-searches" class="saved-searches" hidden></div>
+      <div id="result-heading" class="result-heading" tabindex="-1" hidden></div>
+      <p id="operation-status" class="operation-status" role="status" aria-live="polite" hidden></p>
+      <div id="paper-grid" class="paper-grid"></div>
+      <div id="empty-state" class="empty-state" hidden></div>
+    </section>
+  </main>
+  <footer class="site-footer"><p>架空論文の操作デモ <span>/</span> RONLENS（論レンズ）</p><p>論文・概念・引用は創作です。実在する研究の紹介ではありません。</p></footer>
+  <noscript><p class="noscript">検索と保存を使うにはJavaScriptを有効にしてください。このサイトの論文はすべて架空デモです。</p></noscript>
+</body>
+</html>

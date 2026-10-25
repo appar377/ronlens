@@ -10,11 +10,11 @@
 
 ## 要点
 
-- 論文を日本語の図解と概念マップで読むサイトの、画面に依存しない基盤である。
+- 論文を日本語の図解と概念マップで読むサイトの基盤と、承認済みホーム参照から作ったローカルプレビューである。
 - この版は架空デモ専用であり、実在する論文や実引用を収録していない。
-- UI、プリズム、ロゴ、座標・色・レイアウトは実装していない。
-- 承認済み画像6枚は取得に失敗しており、閲覧・再現・スクリーンショット比較は未実施である。
-- GitHubへの作成・push、Vercel公開は行わない。画像確認とQAの後に別工程で進める。
+- ホーム1枚をローカルで取得・実画素確認済み。PC・スマホの構成、7視点の説明切替、検索、ローカル保存を実装した。
+- ロゴA単体・詳細・一覧・ネットワーク・全体の5参照は未取得。詳細とネットワークは準備中であり、全サイト完成ではない。
+- GitHub remote作成・push、Vercel公開は未実施。残りの画像確認と全画面QA後に、既存の承認範囲で進める。
 
 ## 実行方法
 
@@ -28,13 +28,28 @@ npm run check
 
 `check`は型検査、JavaScript・型宣言のビルド、Node標準テストを順に実行する。
 実行時の外部ライブラリはない。
-TypeScriptだけを開発依存として固定している。
+TypeScriptとPlaywrightを開発依存として固定している。
+
+ホームを表示するには、ビルド後にローカルサーバーを起動する。
+
+```sh
+npm run build:site
+npm run dev
+# http://127.0.0.1:4183
+```
+
+別ターミナルの `npm run test:browser` でChromeの操作検証を実行する。
+Chromeが必要。ブラウザのインストール・アカウント操作はスクリプトに含めない。
+比較画像は `node scripts/capture-home.mjs ../evidence` で再撮影できる。
 
 | コマンド | 内容 |
 | --- | --- |
 | npm run typecheck | strict設定の型検査 |
 | npm run build | distへのES Modules・型宣言出力 |
 | npm test | ビルドと単体・統合テスト |
+| npm run build:site | siteへ静的ホームを出力 |
+| npm run dev | localhost限定のプレビュー |
+| npm run test:browser | 検索・保存・履歴・レスポンシブの実Chrome検証 |
 
 ## 実装した範囲
 
@@ -47,6 +62,9 @@ TypeScriptだけを開発依存として固定している。
 | [search.ts](src/search.ts) | Unicode正規化、語句・タグ検索、結果と0件の区別 |
 | [workspace.ts](src/workspace.ts) | 保存論文・保存検索・現在の検索・履歴の状態遷移 |
 | [storage.ts](src/storage.ts) | localStorage互換アダプター、復元、破損保護、変更競合の検出 |
+| [home.ts](src/web/home.ts) | ホーム表示、検索URL、History API、保存状態、フォーカスの接続 |
+| [home-demo.ts](src/web/home-demo.ts) | ホーム参照の3件に対応した明示的な架空原稿 |
+| [web](web/) | 意味のあるHTML、レスポンシブCSS、原本の画像素材 |
 
 ## 使い方
 
@@ -75,7 +93,7 @@ const results = searchPapers(catalog, {
   sort: "relevance",
 });
 
-// 将来のUIではブラウザのlocalStorageを渡せる。
+// ホームUIもこの方法でブラウザのlocalStorageを渡す。
 // localStorageへのアクセス自体が拒否される場合も呼び出し側で扱う。
 const store = new LocalWorkspaceStore(catalog, window.localStorage);
 const restored = store.load();
@@ -88,7 +106,7 @@ if (restored.status === "empty") {
 ```
 
 `LocalWorkspaceStore`は初回の`load()`後だけ書き込める。
-保存失敗の表示と再試行は将来のUIが担当する。
+保存失敗・別タブ競合をホームUIに表示する。容量不足などの際も、画面内の操作と永続化の成功を区別する。
 `clear()`は本人が保存データを消す操作を明示したときに呼ぶ。
 他アプリのキーは削除しない。
 
@@ -115,7 +133,7 @@ if (restored.status === "empty") {
 - 別論文への移動時に履歴を追加し、戻る・進むは保存した選択と展開を復元する。
 - 同じ論文への連打は履歴を増やさない。戻った後の新しい移動は先の履歴を置き換える。
 - 履歴は100件まで保持する。上限超過時は最古の項目から外す。
-- ブラウザのURL、History API、スクロール位置との連携は未実装である。
+- 検索と保存表示のURL・History APIはホームで実装済み。概念マップの画面・URL・スクロール復元は未実装である。
 
 ### 検索と保存
 
@@ -129,7 +147,7 @@ if (restored.status === "empty") {
 - 破損JSON、非対応版、別データセットは、明示的な解除まで保護する。
 - 読込後に別タブが書き換えた場合は、上書き前の比較で`conflict`を返す。
 - localStorageはトランザクションを持たない。比較と書込みの間の同時更新を完全には排除できない。
-- テストではlocalStorage互換アダプターを使う。実ブラウザの容量・プライバシー制限は未検証である。
+- 基盤テストではlocalStorage互換アダプターを使う。Chromeでは実保存・再読込・別タブ競合を確認し、保存拒否・破損は注入した条件でも確認する。ブラウザ容量を実際に満杯にする試験は行わない。
 
 ### 空・失敗状態
 
@@ -161,9 +179,9 @@ if (restored.status === "empty") {
 
 ## 画像と公開の保留条件
 
-承認済みロゴA・ホーム・詳細・一覧・ネットワーク・全体の6画像が必要である。
-正本は親作業の取得記録に保持している。
-追加取得は行わず、Macの保存予定先を維持する。
+承認済み6画像のうち、ホームだけ取得済みである。
+Libraryの現行手順・ヘルパーは前回と変わらず、既知の転送失敗を繰り返していない。
+未取得の5画像は以下の保存先を維持する。元画像は変更・移動しない。
 
 ```text
 ../references/
@@ -175,6 +193,9 @@ if (restored.status === "empty") {
   01-overview.png
 ```
 
-ここでの`../references/`は専用repoの親にある作業フォルダであり、現在は空である。
-画像取得・目視後に、承認済み構図へのUI実装とPC・モバイル比較を行う。
+`../references/`には現在 `v3-home.png` がある。
+`web/assets/home-reference.png` は同一バイトのコピーで、プリズム・ロゴ記号・図・反射の装飾部分に使う。
+見出し、説明、ラベル、ナビ、入力、ボタンはDOMで実装している。ページ画像だけの表示ではない。
+ホームのロゴ記号はホーム画像からの利用であり、未取得のロゴA単体を検証済みとは扱わない。
+比較条件・残差・不足入力は [ホーム検証記録](docs/home-verification.md) に記す。
 公開時は予定コミット・remote・Vercel productionの成功を照合する。
