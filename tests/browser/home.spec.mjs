@@ -53,7 +53,7 @@ test("bookmark persistence, repeated operation and saved empty state", async ({ 
 test("no matches, query reset, normalized input", async ({ page }) => {
   const input = page.getByRole("searchbox");
   await input.fill("存在しないキーワード"); await input.press("Enter");
-  await expect(page.getByRole("heading", { name: "一致する架空論文がありません" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "一致する論文・解説がありません" })).toBeVisible();
   await page.locator("#empty-state [data-clear-search]").click();
   await expect(page.locator(".paper-card")).toHaveCount(3);
   await input.fill("  ＡＩ "); await input.press("Enter");

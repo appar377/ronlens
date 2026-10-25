@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "kind": "research-explainer",
+  "status": "draft",
+  "slotId": "first-research-explainer",
+  "topicHint": "未使用の下書きテンプレート。最初の出典確認済み原稿は src/retrieval-article.ts に移行済み。",
+  "content": null,
+  "sourceReview": null
+}

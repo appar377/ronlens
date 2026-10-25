@@ -1,7 +1,7 @@
 # RONLENS（論レンズ）
 
 論文固有の概念をひらき、日本語の説明・図・原典を行き来するWebサイトです。
-この公開版の論文A・B・C、原稿、引用はすべて**架空デモ**です。実在研究の紹介や論文取得の自動化は行いません。
+実論文に基づく日本語解説と、操作を試せる**架空デモ**を区別して掲載しています。論文A・B・Cの原稿と引用は創作です。論文取得の自動化は行いません。
 
 ## 使える画面
 
@@ -9,8 +9,9 @@
 | --- | --- |
 | ホーム `/` | プリズムの7視点、検索、論文カード、保存 |
 | 一覧 `/library` | 語句・タグ検索、並び替え、条件の保存、0件からの回復 |
+| 実論文の解説 `/articles/retrieval-practice-versus-rereading` | 原論文2本の解説・条件・結果表・留保、用語マップ、DOIと全文へのリンク |
 | 詳細 `/paper/demo-retrieval` | 概念の選択・枝の開閉、親・同階層・全体図、説明・用語・架空原典 |
-| つながり `/network` | 2本の架空引用と1本の編集関連、引用元・引用先への移動 |
+| つながり `/network` | 実論文の確認済み引用1本と、別枠の架空引用2本・編集関連1本 |
 | 保存 `/saved` | 保存論文、閲覧履歴、保存した検索からの再開 |
 | 案内 `/help` | 読む順序、操作方法、デモと保存の範囲 |
 | 404 | 未収録ページから検索・ホームへ戻る |
@@ -46,6 +47,8 @@ Vercelのビルド設定は [vercel.json](vercel.json) にあります。
 | [search.ts](src/search.ts) | NFKC正規化、語句・タグのAND検索、並び順 |
 | [workspace.ts](src/workspace.ts) | 検索と保存の状態遷移 |
 | [storage.ts](src/storage.ts) | localStorageの読込・保存・復元と破損保護 |
+| [retrieval-article.ts](src/retrieval-article.ts)、[research-article.ts](src/research-article.ts) | 出典確認済み解説と、原論文・サイト解説を分ける契約 |
+| [research-reader.ts](src/research-reader.ts)、[research-view.ts](src/web/research-view.ts) | 実記事の検索・概念選択・独立したローカル保存と表示 |
 | [home-demo.ts](src/web/home-demo.ts) | 公開UIの架空3論文・15概念・3関係 |
 | [home.ts](src/web/home.ts)、[app.ts](src/web/app.ts) | ページ、URL、履歴、フォーカスの接続 |
 | [diagrams.ts](src/web/diagrams.ts) | 概念図、全体ミニマップ、説明図 |
@@ -55,7 +58,7 @@ Vercelのビルド設定は [vercel.json](vercel.json) にあります。
 - 保存先はこのブラウザのlocalStorageだけです。アカウント、サーバー送信、端末間同期はありません。
 - 保存論文・保存検索・検索条件・閲覧履歴を版付きで保存します。読書履歴と保存検索はそれぞれ100件までです。
 - 破損JSON・非対応版は自動で上書きしません。保存拒否・容量不足・別タブ競合は画面に通知します。localStorage自体にはトランザクションがないため、同時更新の完全な排除は保証しません。
-- 引用抜粋が架空原稿内に存在すること、親子の循環・孤立・論文跨ぎがないことを検証します。未定義の実論文メタデータは受け付けません。
+- 引用抜粋が架空原稿内に存在すること、親子の循環・孤立・論文跨ぎがないことを検証します。架空カタログでは実論文メタデータを受け付けません。実論文解説は別の契約と保存領域を使います。
 
 ## デザインと検証記録
 
@@ -65,3 +68,5 @@ Vercelのビルド設定は [vercel.json](vercel.json) にあります。
 
 [全画面の検証記録](docs/full-site-verification.md)に、比較条件・機能検証・残る差を記載します。
 [基盤検証](docs/verification.md)と[初期ホーム検証](docs/home-verification.md)は当時の履歴です。
+
+[実論文解説の仕様と検証](docs/research-article-handoff.md)に、出典と公開の境界を記載しています。

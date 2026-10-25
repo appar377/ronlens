@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "RONLENS fictional demo reference-based fictional-paper explorer",
+  "description": "RONLENS Japanese research explainers and clearly labeled fictional UI demos",
   "engines": {
     "node": ">=20"
   },

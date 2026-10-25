@@ -11,13 +11,13 @@ test('reader reveals reference state, preserves hidden expansion, and restores a
  await page.locator('[data-expand="retrieval-search"]').click();
  await expect(select(page,'retrieval-vector')).toBeVisible();
  await select(page,'retrieval-distance').click();
- const before=await page.evaluate(()=>JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k=>k.includes('ronlens')))).reader);
+ const before=await page.evaluate(()=>JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k=>k.includes('ronlens')&&!k.includes('research-reader')))).reader);
  await page.locator('.citation-link').click();
  await expect(page).toHaveURL(/demo-vectors\?concept=vectors-distance/);
  await page.goBack();
  await expect(select(page,'retrieval-distance')).toHaveAttribute('aria-pressed','true');
  await expect(select(page,'retrieval-vector')).toBeVisible();
- expect(await page.evaluate(()=>JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k=>k.includes('ronlens')))).reader)).toEqual(before);
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k=>k.includes('ronlens')&&!k.includes('research-reader')))).reader)).toEqual(before);
  await page.goForward(); await expect(select(page,'vectors-distance')).toHaveAttribute('aria-pressed','true');
  await page.goBack(); await expect(select(page,'retrieval-distance')).toBeFocused(); await page.reload(); await expect(select(page,'retrieval-vector')).toBeVisible();
 });
@@ -43,7 +43,7 @@ test('library searches, filters, saves, restores and clears actual results',asyn
  await page.locator('input[value="ベクトル"]').check(); await expect(page.locator('.library-card h2')).toHaveText('意味の近さを測る');
  await page.locator('[data-remove-tag]').click(); await expect(page.locator('.library-card')).toHaveCount(3);
  await page.getByRole('searchbox').fill('存在しない検索');await page.getByRole('searchbox').press('Enter');
- await expect(page.getByRole('heading',{name:'一致する架空論文がありません'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'一致する論文・解説がありません'})).toBeVisible();
  await page.goto('/library?sort=title'); await expect(page.getByRole('searchbox')).toHaveValue('');await expect(page.locator('.library-card')).toHaveCount(3);
 });
 test('mobile filters and header close with Escape and restore focus',async({page})=>{
@@ -85,7 +85,7 @@ test('unavailable storage has truthful status and remains usable',async({page})=
 for(const width of [292,320,390,700,701,768,900,901,1126,1440]) test(`all screens reflow without horizontal overflow at ${width}`,async({page})=>{
  await page.setViewportSize({width,height:850}); const errors=[];page.on('pageerror',e=>errors.push(e.message));
  for(const route of ['/library',a,'/network','/saved','/help','/no-page']) {
-  await page.goto(route); expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),route).toBe(true);
+  await page.goto(route); await expect(page.locator('body')).toHaveAttribute('data-ready','true'); await page.evaluate(()=>document.fonts.ready); expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),route).toBe(true);
   const bounds=await page.locator('.brand,.header-actions').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return{left:r.left,right:r.right}}));expect(bounds[0].right,route).toBeLessThanOrEqual(bounds[1].left);
  }
  expect(errors).toEqual([]);
