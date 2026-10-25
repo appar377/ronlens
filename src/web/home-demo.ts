@@ -11,14 +11,14 @@ const dataset: DemoDataset = {
   schemaVersion: 1, mode: "fictional-demo", id: "ronlens-home-demo-v1", notice: DEMO_NOTICE,
   papers: [
     { id: "demo-retrieval", kind: "fictional-demo", title: "資料を探して答えるAI",
-      summary: "質問を理解し、関連する資料を探して、根拠とともに回答を生成する仕組みを探ります。",
+      summary: "質問を変換し、資料を探して、根拠とともに回答を組み立てる仕組みです。",
       tags: ["資料検索", "AI"], rootConceptId: "retrieval-root",
       readingOrder: ["retrieval-root", "retrieval-question", "retrieval-search", "retrieval-distance", "retrieval-vector", "retrieval-similarity", "retrieval-candidates", "retrieval-answer", "retrieval-evidence"] },
     { id: "demo-vectors", kind: "fictional-demo", title: "意味の近さを測る",
-      summary: "言葉や文章をベクトルで表し、意味の近さ（類似度）を計算する方法を紹介します。",
+      summary: "文章どうしの意味の近さを、数値で比較する方法を紹介します。",
       tags: ["ベクトル", "AI"], rootConceptId: "vectors-root", readingOrder: ["vectors-root", "vectors-feature", "vectors-distance"] },
     { id: "demo-evidence", kind: "fictional-demo", title: "出典で回答を確かめる",
-      summary: "回答の根拠となる資料の出典を示し、内容を照合して正確さを確かめる方法を探ります。",
+      summary: "回答に使った資料をたどり、主張と根拠を照合する方法です。",
       tags: ["出典と照合", "AI"], rootConceptId: "evidence-root", readingOrder: ["evidence-root", "evidence-source", "evidence-check"] },
   ],
   concepts: [

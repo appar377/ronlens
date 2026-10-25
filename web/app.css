@@ -600,3 +600,20 @@
   .node-select svg { width: 13px; }
   .concept-node[data-node="retrieval-distance"] { width: 33%; max-width: 34%; }
 }
+
+@media(max-width:700px) {
+  .library-layout { padding: 8px; }
+  .library-content .mobile-page-title { font-size: 22px; line-height: 1.25; margin-bottom: 8px; }
+  .library-card .tree-thumbnail { padding: 5px; }
+  .library-card .thumbnail-root { min-height: 34px; padding: 4px 8px; max-width: 130px; }
+  .library-card .thumbnail-root span { font-size: 0; }
+  .library-card .thumbnail-root b { font-size: 12px; margin: 0; }
+  .library-card .thumbnail-root svg { width: 19px; height: 22px; }
+  .library-card .thumbnail-branch { height: 18px; }
+  .library-card .thumbnail-children span, .library-card .thumbnail-grandchildren span { padding: 5px 6px; }
+  .library-card .thumbnail-grandchildren { padding-top: 14px; }
+  .library-card .thumbnail-grandchildren:before { height: 13px; }
+}
+@media(max-width:700px) {
+  .library-card .result-metadata { margin: 8px 0; }
+}
