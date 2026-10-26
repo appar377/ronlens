@@ -9,11 +9,13 @@ import { icon } from "./icons.js";
 import { escapeHtml as esc, paperLetter, conceptIcon, conceptMap, miniMap, thumbnail, explanationDiagram } from "./diagrams.js";
 import type { Paper, PaperLink } from "../model.js";
 
-import { ARTICLE_PATH, ResearchReaderStore, selectResearchConcept, toggleResearchBranch, validResearchView, articleUrl, researchMatches } from "../research-reader.js";
-import { retrievalArticle } from "../retrieval-article.js";
+import { ResearchReaderStore, selectResearchConcept, toggleResearchBranch, validResearchView, articleUrl, researchMatches } from "../research-reader.js";
+import { publishedExplainers, explainerAtPath, researchCatalogSummary } from "../research-catalog.js";
 import { syncArticleMetadata } from "./research-metadata.js";
 import { researchCard, researchPage, researchNetwork } from "./research-view.js";
-const research = new ResearchReaderStore((() => { try { return window.localStorage; } catch { return undefined; } })());
+const researchEntries = publishedExplainers.map(item => ({ item, store: new ResearchReaderStore((() => { try { return window.localStorage; } catch { return undefined; } })(), item.article) }));
+const activeResearch = () => researchEntries.find(entry => entry.item === explainerAtPath(path()));
+const researchNotices = () => [...new Set(researchEntries.map(entry => entry.store.notice).filter(Boolean))].join(' ');
 const catalog = createHomeCatalog();
 let state = createWorkspace(catalog);
 let store: LocalWorkspaceStore | undefined;
@@ -55,7 +57,7 @@ function dispatch(action: WorkspaceAction, success = ""): boolean {
   return true;
 }
 function checkpoint(): void {
-  history.replaceState({ ronlens: 1, reader: state.reader, researchView: research.state.view, scrollY: window.scrollY }, "", location.href);
+  history.replaceState({ ronlens: 1, reader: state.reader, researchSlug: activeResearch()?.item.article.slug, researchView: activeResearch()?.store.state.view, scrollY: window.scrollY }, "", location.href);
 }
 function go(url: string): void {
   if (new URL(url, location.href).pathname === "/") { location.assign(url); return; }
@@ -63,10 +65,12 @@ function go(url: string): void {
   syncRoute(); render(); window.scrollTo(0, 0); if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView(); checkpoint(); $("#page-heading")?.focus({ preventScroll: true });
 }
 function syncRoute(): void {
-  if (path() === ARTICLE_PATH) {
+  const active = activeResearch();
+  if (active) {
+    const { store: research, item: { article } } = active;
     const requested = params().get("concept");
-    if (requested && !retrievalArticle.concepts.some(c => c.id === requested)) return;
-    research.update({ visited: true, view: requested ? selectResearchConcept(research.state.view, requested) : research.state.view });
+    if (requested && !article.concepts.some(c => c.id === requested)) return;
+    research.update({ visited: true, view: requested ? selectResearchConcept(research.state.view, requested, article) : research.state.view });
   }
   if (path() === "/library") {
     const parsed = parseSearchQuery({ text: params().get("q") ?? "", tags: params().getAll("tag"), sort: params().get("sort") ?? "relevance" });
@@ -87,7 +91,7 @@ function syncRoute(): void {
 function readerChange(action: ReaderAction): void {
   if (!dispatch({ type: "reader", action })) return;
   const entry = currentEntry(state.reader);
-  if (entry) history.replaceState({ ronlens: 1, reader: state.reader, researchView: research.state.view, scrollY: window.scrollY }, "", paperUrl(entry.paperId, entry.selectedConceptId));
+  if (entry) history.replaceState({ ronlens: 1, reader: state.reader, researchSlug: activeResearch()?.item.article.slug, researchView: activeResearch()?.store.state.view, scrollY: window.scrollY }, "", paperUrl(entry.paperId, entry.selectedConceptId));
   render();
 }
 function queryUrl(): string {
@@ -129,15 +133,15 @@ function library(): string {
   const result = searchPapers(catalog, state.search);
   const papers = !state.search.text && !state.search.tags.length && state.search.sort === "relevance" ? catalog.dataset.papers : result.hits.map(hit => hit.paper);
   const current = currentEntry(state.reader);
-  const hasResearch = researchMatches(state.search);
+  const matchingResearch = researchEntries.filter(entry => researchMatches(state.search, entry.item.article));
   const results = papers.map(paper => ({ title: paper.title, markup: paperResult(paper) }));
-  if (hasResearch) results.unshift({ title: retrievalArticle.title, markup: researchCard(research.state) });
+  results.unshift(...matchingResearch.map(entry => ({ title: entry.item.article.title, markup: researchCard(entry.store.state, false, entry.item) })));
   if (state.search.sort === "title") results.sort((a, b) => a.title.localeCompare(b.title, "ja"));
   const filters: [string, string][] = [["学習・記憶", "学習・記憶"], ["AI", "AI・情報"], ["ベクトル", "ベクトル"], ["資料検索", "資料検索"], ["出典と照合", "出典と照合"]];
   const chips = [...state.search.tags.map(tag => `<button data-remove-tag="${esc(tag)}">${esc(tag)} ×</button>`), ...(state.search.text ? [`<button data-clear-text>キーワード: ${esc(state.search.text)} ×</button>`] : [])].join("");
-  return `<div class="library-layout"><aside class="filter-sidebar ${filtersOpen ? "filters-open" : ""}" aria-label="絞り込み"><h2>絞り込み<button class="filter-close" data-filter-close aria-label="絞り込みを閉じる">×</button></h2><fieldset><legend>分野・キーワード</legend>${filters.map(([value, label]) => `<label><input type="checkbox" name="tag" value="${esc(value)}" ${state.search.tags.includes(value.toLowerCase()) ? "checked" : ""}>${label} <small>(${catalog.dataset.papers.filter(p => p.tags.some(t => t.toLowerCase() === value.toLowerCase())).length + (retrievalArticle.tags.includes(value) ? 1 : 0)})</small></label>`).join("")}</fieldset><div class="filter-information"><h3>このライブラリについて</h3><p>実論文2本を扱う解説1件と、操作を試せる架空デモ3件を掲載しています。各カードのラベルで区別できます。</p>${link("/help#demo", "デモの範囲を見る →")}</div>${current ? `<div class="resume-card"><span>続きから読む</span>${link(paperUrl(current.paperId, current.selectedConceptId), miniMap(catalog, current.paperId, current.selectedConceptId) + '<strong>' + esc(catalog.concept(current.selectedConceptId)?.title ?? "") + '</strong>') }</div>` : ""}</aside>
+  return `<div class="library-layout"><aside class="filter-sidebar ${filtersOpen ? "filters-open" : ""}" aria-label="絞り込み"><h2>絞り込み<button class="filter-close" data-filter-close aria-label="絞り込みを閉じる">×</button></h2><fieldset><legend>分野・キーワード</legend>${filters.map(([value, label]) => `<label><input type="checkbox" name="tag" value="${esc(value)}" ${state.search.tags.includes(value.toLowerCase()) ? "checked" : ""}>${label} <small>(${catalog.dataset.papers.filter(p => p.tags.some(t => t.toLowerCase() === value.toLowerCase())).length + publishedExplainers.filter(e => e.article.tags.some(tag => tag.toLowerCase() === value.toLowerCase())).length})</small></label>`).join("")}</fieldset><div class="filter-information"><h3>このライブラリについて</h3><p>${researchCatalogSummary}を掲載しています。各カードのラベルで区別できます。</p>${link("/help#demo", "デモの範囲を見る →")}</div>${current ? `<div class="resume-card"><span>続きから読む</span>${link(paperUrl(current.paperId, current.selectedConceptId), miniMap(catalog, current.paperId, current.selectedConceptId) + '<strong>' + esc(catalog.concept(current.selectedConceptId)?.title ?? "") + '</strong>') }</div>` : ""}</aside>
     <section class="library-content"><h1 id="page-heading" tabindex="-1" class="mobile-page-title">論文を探す</h1><form class="library-search" role="search"><label class="sr-only" for="library-search">論文・キーワードを検索</label><div>${icon("search")}<input id="library-search" type="search" value="${esc(state.search.text)}" maxlength="500" placeholder="論文・キーワードを検索"><button type="button" data-clear-text aria-label="検索語を消す">×</button></div><button type="submit" class="primary-button">検索</button></form>
-    <div class="library-toolbar"><button data-filters class="filter-mobile-button" aria-expanded="${filtersOpen}">${icon("filter")}フィルタ</button><p role="status">${hasResearch ? "解説1件 · " : ""}${papers.length}件の架空論文が見つかりました</p><div class="filter-chips">${chips}</div><button class="text-button" data-clear-query>すべてクリア</button><label class="sort-select"><span class="sr-only">並び順</span><select id="sort"><option value="relevance" ${state.search.sort === "relevance" ? "selected" : ""}>関連度の高い順</option><option value="title" ${state.search.sort === "title" ? "selected" : ""}>タイトル順</option></select></label></div>
+    <div class="library-toolbar"><button data-filters class="filter-mobile-button" aria-expanded="${filtersOpen}">${icon("filter")}フィルタ</button><p role="status">${matchingResearch.length ? "解説" + matchingResearch.length + "件 · " : ""}${papers.length}件の架空論文が見つかりました</p><div class="filter-chips">${chips}</div><button class="text-button" data-clear-query>すべてクリア</button><label class="sort-select"><span class="sr-only">並び順</span><select id="sort"><option value="relevance" ${state.search.sort === "relevance" ? "selected" : ""}>関連度の高い順</option><option value="title" ${state.search.sort === "title" ? "selected" : ""}>タイトル順</option></select></label></div>
     ${state.search.text || state.search.tags.length ? `<button class="save-query-button" data-save-query ${state.savedSearches.some(q => searchKey(q) === searchKey(state.search)) ? "disabled" : ""}>${icon("bookmark")}${state.savedSearches.some(q => searchKey(q) === searchKey(state.search)) ? "検索を保存済み" : "この検索を保存"}</button>` : ""}
     <div class="library-results">${results.length ? results.map(item => item.markup).join("") : empty("一致する論文・解説がありません", "キーワードを短くするか、検索条件を解除してみてください。", "/library", "検索条件を解除")}</div><p class="library-bottom">ⓘ 取得自動化は行っていません。実論文の解説と架空デモを区別して表示しています。</p></section></div>`;
 }
@@ -185,9 +189,11 @@ function saved(): string {
   const tab = params().get("tab") ?? "papers";
   const savedItems = state.savedPaperIds.flatMap(id => catalog.paper(id) ?? []);
   const historyEntries = readingHistory(state).entries;
-  return `<section class="collection-page"><div class="page-intro"><p class="eyebrow">YOUR LIBRARY</p><h1 id="page-heading" tabindex="-1">保存して、また続きから。</h1><p>気になった論文と、たどってきた概念を見返せます。</p></div><nav class="collection-tabs" aria-label="保存の種類">${[["papers", "保存した論文", savedItems.length + Number(research.state.saved)], ["history", "閲覧履歴", historyEntries.length + Number(research.state.visited)], ["searches", "保存した検索", state.savedSearches.length]].map(([key, label, count]) => `<a data-route href="/saved${key === "papers" ? "" : "?tab=" + key}" ${tab === key ? 'aria-current="page"' : ''}>${label}<span>${count}</span></a>`).join("")}</nav><p class="local-only-note">このブラウザだけに保存されます。アカウント登録・端末間同期はありません。</p>
-    ${tab === "history" && research.state.visited ? researchCard(research.state, true) : tab === "papers" && research.state.saved ? researchCard(research.state, true) : ""}
-    ${tab === "history" ? historyEntries.length ? '<ol class="history-list">' + [...historyEntries].reverse().map((entry, reverseIndex) => `<li><span class="history-dot"></span><div><small>論文${paperLetter(entry.paperId)}</small><h2>${esc(catalog.concept(entry.selectedConceptId)?.title ?? "")}</h2><p>${esc(catalog.paper(entry.paperId)?.title ?? "")}</p></div><button data-visit="${historyEntries.length - 1 - reverseIndex}" class="secondary-button">この位置から読む ${icon("arrow")}</button></li>`).join("") + '</ol>' : research.state.visited ? '' : empty("閲覧履歴はまだありません", "図解をひらくと、選んだ概念と開いた枝がここに残ります。") : tab === "searches" ? state.savedSearches.length ? '<div class="saved-query-list">' + state.savedSearches.map((query, index) => `<article>${icon("search")}<div><h2>${esc(query.text || "すべての論文")}</h2><p>${esc(query.tags.join(" / ") || "絞り込みなし")}</p></div><button data-apply-query="${index}" class="secondary-button">この条件で探す →</button><button data-remove-query="${index}" class="remove-query" aria-label="保存した検索を解除">×</button></article>`).join("") + '</div>' : empty("保存した検索はまだありません", "検索したあと「この検索を保存」を押すと、条件ごと見返せます。") : savedItems.length ? '<div class="saved-paper-list">' + savedItems.map(paperResult).join("") + '</div>' : research.state.saved ? '' : empty("保存した論文はまだありません", "気になった論文のしおりを押すと、ここから見返せます。")}</section>`;
+  const savedResearch = researchEntries.filter(e => e.store.state.saved);
+  const visitedResearch = researchEntries.filter(e => e.store.state.visited);
+  return `<section class="collection-page"><div class="page-intro"><p class="eyebrow">YOUR LIBRARY</p><h1 id="page-heading" tabindex="-1">保存して、また続きから。</h1><p>気になった論文と、たどってきた概念を見返せます。</p></div><nav class="collection-tabs" aria-label="保存の種類">${[["papers", "保存した論文", savedItems.length + savedResearch.length], ["history", "閲覧履歴", historyEntries.length + visitedResearch.length], ["searches", "保存した検索", state.savedSearches.length]].map(([key, label, count]) => `<a data-route href="/saved${key === "papers" ? "" : "?tab=" + key}" ${tab === key ? 'aria-current="page"' : ''}>${label}<span>${count}</span></a>`).join("")}</nav><p class="local-only-note">このブラウザだけに保存されます。アカウント登録・端末間同期はありません。</p>
+    ${(tab === "history" ? visitedResearch : tab === "papers" ? savedResearch : []).map(e => researchCard(e.store.state, true, e.item)).join("")}
+    ${tab === "history" ? historyEntries.length ? '<ol class="history-list">' + [...historyEntries].reverse().map((entry, reverseIndex) => `<li><span class="history-dot"></span><div><small>論文${paperLetter(entry.paperId)}</small><h2>${esc(catalog.concept(entry.selectedConceptId)?.title ?? "")}</h2><p>${esc(catalog.paper(entry.paperId)?.title ?? "")}</p></div><button data-visit="${historyEntries.length - 1 - reverseIndex}" class="secondary-button">この位置から読む ${icon("arrow")}</button></li>`).join("") + '</ol>' : visitedResearch.length ? '' : empty("閲覧履歴はまだありません", "図解をひらくと、選んだ概念と開いた枝がここに残ります。") : tab === "searches" ? state.savedSearches.length ? '<div class="saved-query-list">' + state.savedSearches.map((query, index) => `<article>${icon("search")}<div><h2>${esc(query.text || "すべての論文")}</h2><p>${esc(query.tags.join(" / ") || "絞り込みなし")}</p></div><button data-apply-query="${index}" class="secondary-button">この条件で探す →</button><button data-remove-query="${index}" class="remove-query" aria-label="保存した検索を解除">×</button></article>`).join("") + '</div>' : empty("保存した検索はまだありません", "検索したあと「この検索を保存」を押すと、条件ごと見返せます。") : savedItems.length ? '<div class="saved-paper-list">' + savedItems.map(paperResult).join("") + '</div>' : savedResearch.length ? '' : empty("保存した論文はまだありません", "気になった論文のしおりを押すと、ここから見返せます。")}</section>`;
 }
 function help(): string {
   return `<section class="help-page"><div class="page-intro"><p class="eyebrow">WELCOME TO RONLENS</p><h1 id="page-heading" tabindex="-1">つながりをたどって、<br>図解で論文を読む。</h1><p>ひとつの概念から、次の理解へ。はじめてでも、読む場所を見失わないために。</p></div><div class="help-steps">${[["01", "search", "探す", "気になる言葉で検索し、図のカードから論文をひらきます。", "/library"], ["02", "discovery", "図解で理解", "ノードを選ぶと下に説明が開きます。＋と−で枝を開閉できます。", paperUrl("demo-retrieval")], ["03", "document", "原典を確かめる", "解説の下の原典を開き、説明と元の文章を照合します。", paperUrl("demo-retrieval", "retrieval-distance")], ["04", "link", "関連論文へ", "引用元と引用先、編集上の関連を分けてたどれます。", "/network"]].map(([number, glyph, title, body, url]) => `<article><span class="step-number">${number}</span>${icon(glyph ?? "")}<h2>${title}</h2><p>${body}</p>${link(url ?? "/library", "試してみる →")}</article>`).join("")}</div><div class="help-details"><section><h2>迷ったら、ここを確認</h2><details open><summary>概念マップはどう読む？</summary><p>上のノードが全体、その下が内訳です。選択しても親・同じ階層・全体ミニマップが残ります。「読む順序」から順番にたどることもできます。7つの視点はホームの入口の表現で、論文の固定分類ではありません。</p></details><details><summary>戻ったとき、開いた枝は残る？</summary><p>ブラウザの戻る／進むと閲覧履歴から、開いた枝と選択した概念を復元します。保存が使えない環境では注意を表示します。</p></details><details><summary>実線と点線の違いは？</summary><p>デモの実線は架空引用、別枠の実論文ネットワークは原論文で確認できた引用です。点線は読み比べるために編集で選んだ関連で、引用の証拠ではありません。</p></details><details><summary>保存はどこにある？</summary><p>このブラウザのlocalStorageだけに保存します。サーバーへの送信、アカウント作成、端末間同期は行いません。ブラウザデータを消すと保存も失われます。</p></details></section><section id="demo" class="demo-explanation"><h2>実論文の解説と、架空デモ</h2><p>論文A・B・C、概念の原稿、引用関係は操作を説明するための創作です。実論文の研究成果を要約したものではありません。</p><p>「実論文に基づく解説」は原論文へのリンクと書誌情報を掲載したサイト独自の記事です。原論文著者による記事ではありません。解説と研究結果、適用範囲を分けて確認できます。実論文の取得自動化は行っていません。</p>${demoTag()}<h3>キーボードでの操作</h3><p>Tabで移動、Enterで選択できます。メニュー・全体図はEscapeで閉じます。拡大・縮小にはマップ右下のボタンを使います。</p></section></div></section>`;
@@ -196,13 +202,15 @@ function notFound(): string {
   return `<section class="not-found"><span class="error-code">404</span><h1 id="page-heading" tabindex="-1">このページは見つかりませんでした</h1><p>リンクが変わったか、掲載されていない論文・解説・概念かもしれません。</p><div>${link("/library", "論文を探す", "primary-button")}${link("/", "ホームに戻る", "secondary-button")}</div></section>`;
 }
 function render(focus?: string): void {
+  const active = activeResearch();
+  const validArticle = active && (!params().has("concept") || active.item.article.concepts.some(c => c.id === params().get("concept"))) ? active : undefined;
   let content: string;
-  try { content = path() === ARTICLE_PATH ? (params().has("concept") && !retrievalArticle.concepts.some(c => c.id === params().get("concept")) ? notFound() : researchPage(research.state)) : path() === "/library" ? library() : path().startsWith("/paper/") ? reader() : path() === "/network" ? network() : path() === "/saved" ? saved() : path() === "/help" ? help() : notFound(); }
+  try { content = active ? (validArticle ? researchPage(active.store.state, active.item) : notFound()) : path() === "/library" ? library() : path().startsWith("/paper/") ? reader() : path() === "/network" ? network() : path() === "/saved" ? saved() : path() === "/help" ? help() : notFound(); }
   catch { content = '<section class="not-found"><h1 id="page-heading" tabindex="-1">表示を読み込めませんでした</h1><p>保存内容はそのままです。ページを読み直してください。</p><button data-reload class="primary-button">再読み込み</button></section>'; }
-  document.title = (path() === ARTICLE_PATH ? retrievalArticle.title : path() === "/library" ? "論文を探す" : path() === "/network" ? "論文どうしのつながり" : path() === "/saved" ? "保存・履歴" : path() === "/help" ? "使い方" : path().startsWith("/paper/") ? catalog.paper(routePaperId())?.title ?? "ページが見つかりません" : "ページが見つかりません") + " | RONLENS";
-  syncArticleMetadata(path() === ARTICLE_PATH && (!params().has("concept") || retrievalArticle.concepts.some(c => c.id === params().get("concept"))));
+  document.title = (validArticle ? validArticle.item.article.title : path() === "/library" ? "論文を探す" : path() === "/network" ? "論文どうしのつながり" : path() === "/saved" ? "保存・履歴" : path() === "/help" ? "使い方" : path().startsWith("/paper/") ? catalog.paper(routePaperId())?.title ?? "ページが見つかりません" : "ページが見つかりません") + " | RONLENS";
+  syncArticleMetadata(validArticle?.item.article);
   app.className = "inner-page";
-  app.innerHTML = header() + `<main class="app-main">${message ? `<p class="operation-status app-status" role="status">${esc(message)}</p>` : ""}${research.notice ? `<p class="operation-status research-status" role="status">${esc(research.notice)}</p>` : ""}${content}</main>` + footer() + '<dialog id="map-dialog" class="map-dialog"></dialog>';
+  app.innerHTML = header() + `<main class="app-main">${message ? `<p class="operation-status app-status" role="status">${esc(message)}</p>` : ""}${researchNotices() ? `<p class="operation-status research-status" role="status">${esc(researchNotices())}</p>` : ""}${content}</main>` + footer() + '<dialog id="map-dialog" class="map-dialog"></dialog>';
   alignConceptEdges();
   alignNetworkEdges();
   if (filtersOpen) { $(".library-content")?.setAttribute("inert", ""); $(".site-header")?.setAttribute("inert", ""); $(".site-footer")?.setAttribute("inert", ""); }
@@ -266,13 +274,17 @@ document.addEventListener("click", event => {
     event.preventDefault(); go((target as HTMLAnchorElement).href); return;
   }
   if (target.hasAttribute("data-research-save")) {
-    research.update({ saved: !research.state.saved }); render(); ($("[data-research-save]") ?? $("#page-heading"))?.focus({ preventScroll: true }); return;
+    const entry = researchEntries.find(e => e.item.article.slug === target.dataset.researchSave);
+    if (!entry) return;
+    entry.store.update({ saved: !entry.store.state.saved }); render(); ($('[data-research-save="' + entry.item.article.slug + '"]') ?? $("#page-heading"))?.focus({ preventScroll: true }); return;
   }
   if (target.dataset.researchConcept || target.hasAttribute("data-research-expand")) {
+    const active = activeResearch(); if (!active) return;
+    const { store: research, item: { article } } = active;
     const fromGlossary = !!target.closest(".research-glossary");
-    research.update({ view: target.dataset.researchConcept ? selectResearchConcept(research.state.view, target.dataset.researchConcept) : toggleResearchBranch(research.state.view) });
-    history.replaceState(history.state, "", articleUrl(research.state.view)); checkpoint(); render();
-    (target.hasAttribute("data-research-expand") ? $("[data-research-expand]") : $('.research-tree [data-research-concept="' + research.state.view.selected + '"]'))?.focus({ preventScroll: true });
+    research.update({ view: target.dataset.researchConcept ? selectResearchConcept(research.state.view, target.dataset.researchConcept, article) : toggleResearchBranch(research.state.view, target.dataset.researchExpand, article) });
+    history.replaceState(history.state, "", articleUrl(research.state.view, article)); checkpoint(); render();
+    (target.hasAttribute("data-research-expand") ? $('[data-research-expand="' + target.dataset.researchExpand + '"]') : $('.research-tree [data-research-concept="' + research.state.view.selected + '"]'))?.focus({ preventScroll: true });
     if (fromGlossary) $(".research-map")?.scrollIntoView({ block: "start" });
     checkpoint();
     return;
@@ -337,7 +349,8 @@ document.addEventListener("keydown", event => {
 });
 window.addEventListener("popstate", event => {
   if (path() === "/") { location.reload(); return; }
-  if (path() === ARTICLE_PATH && validResearchView(event.state?.researchView)) research.update({ view: event.state.researchView });
+  const active = activeResearch();
+  if (active && (!event.state?.researchSlug || event.state.researchSlug === active.item.article.slug) && validResearchView(event.state?.researchView, active.item.article)) active.store.update({ view: event.state.researchView });
   const restored = decodeWorkspace(catalog, { ...state, reader: event.state?.ronlens === 1 ? event.state.reader : state.reader });
   if (restored.status === "ready" || restored.status === "recovered") { state = restored.state; persist(); }
   readerTab = "map"; menuOpen = false; filtersOpen = false; syncRoute(); render(); ($(".research-tree [aria-pressed=true]") ?? $(".map-stage [aria-pressed=true]") ?? $("#page-heading"))?.focus({ preventScroll: true }); window.scrollTo(0, typeof event.state?.scrollY === "number" ? event.state.scrollY : 0);

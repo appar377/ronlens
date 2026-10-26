@@ -7,8 +7,9 @@ import { createHomeCatalog } from "./home-demo.js";
 import { icon } from "./icons.js";
 
 import { ResearchReaderStore, researchMatches } from "../research-reader.js";
+import { publishedExplainers } from "../research-catalog.js";
 import { researchCard } from "./research-view.js";
-const research = new ResearchReaderStore((() => { try { return window.localStorage; } catch { return undefined; } })());
+const researchEntries = publishedExplainers.map(item => ({ item, store: new ResearchReaderStore((() => { try { return window.localStorage; } catch { return undefined; } })(), item.article) }));
 const catalog = createHomeCatalog();
 let state = createWorkspace(catalog);
 let store: LocalWorkspaceStore | undefined;
@@ -92,16 +93,16 @@ function render(): void {
   const result = searchPapers(catalog, state.search);
   const hasQuery = !!state.search.text || state.search.tags.length > 0;
   const ordered = !hasQuery && state.search.sort === "relevance" ? catalog.dataset.papers : result.hits.map(hit => hit.paper);
-  const hasResearch = researchMatches(state.search) && (view === "all" || research.state.saved);
+  const matchingResearch = researchEntries.filter(e => researchMatches(state.search, e.item.article) && (view === "all" || e.store.state.saved));
   const papers = ordered.filter(paper => view === "all" || state.savedPaperIds.includes(paper.id));
   document.querySelectorAll<HTMLAnchorElement>("[data-view]").forEach(link => {
     if (link.dataset.view === view) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
   });
-  $("#saved-count").textContent = "（" + (state.savedPaperIds.length + Number(research.state.saved)) + "件）";
+  $("#saved-count").textContent = "（" + (state.savedPaperIds.length + researchEntries.filter(e => e.store.state.saved).length) + "件）";
   const heading = $("#result-heading");
   heading.hidden = !hasQuery && view === "all";
-  heading.innerHTML = '<p>' + (view === "saved" ? "保存した論文" : "検索結果") + ' <strong>' + (papers.length + Number(hasResearch)) + '件</strong></p>' +
+  heading.innerHTML = '<p>' + (view === "saved" ? "保存した論文" : "検索結果") + ' <strong>' + (papers.length + matchingResearch.length) + '件</strong></p>' +
     (hasQuery ? '<button data-clear-search>検索条件を解除</button>' : "");
   $("#save-search").hidden = !hasQuery;
   const alreadySaved = state.savedSearches.some(query => searchKey(query) === searchKey(state.search));
@@ -114,7 +115,7 @@ function render(): void {
     (query.tags.length ? " · " + escape(query.tags.join(" / ")) : "") + '</button><button data-remove-query="' + index +
     '" aria-label="保存した検索「' + escape(query.text || "すべての論文") + '」を解除">×</button></span>').join("");
   if (!document.querySelector("#research-discovery")) $("#paper-grid").insertAdjacentHTML("beforebegin", '<div id="research-discovery"></div>');
-  $("#research-discovery").innerHTML = hasResearch ? researchCard(research.state, view === "saved") : "";
+  $("#research-discovery").innerHTML = matchingResearch.map(e => researchCard(e.store.state, view === "saved", e.item)).join("");
   $("#paper-grid").innerHTML = papers.map(paper => {
     const index = catalog.dataset.papers.findIndex(item => item.id === paper.id);
     const label = ["A", "B", "C"][index] ?? "";
@@ -128,14 +129,14 @@ function render(): void {
       '" aria-label="「' + escape(paper.title) + '」' + (saved ? 'の保存を解除' : 'を保存') +
       '" aria-pressed="' + saved + '">' + icon("bookmark") + '</button></div></article>';
   }).join("");
-  if (hasResearch && state.search.sort === "title") {
-    const card = $("#research-discovery").firstElementChild;
+  if (matchingResearch.length && state.search.sort === "title") {
+    const cards = Array.from($("#research-discovery").children);
     const grid = $("#paper-grid");
-    if (card) grid.append(card);
+    grid.append(...cards);
     grid.replaceChildren(...Array.from(grid.children).sort((a, b) => (a.querySelector("h2")?.textContent ?? "").localeCompare(b.querySelector("h2")?.textContent ?? "", "ja")));
   }
   const empty = $("#empty-state");
-  empty.hidden = papers.length > 0 || hasResearch;
+  empty.hidden = papers.length > 0 || matchingResearch.length > 0;
   empty.innerHTML = view === "saved" && !hasQuery
     ? '<h2>保存した論文はまだありません</h2><p>気になった論文のしおりを押すと、ここから見返せます。</p><button data-show-all>すべての論文へ</button>'
     : '<h2>一致する論文・解説がありません</h2><p>キーワードを短くするか、検索条件を解除してみてください。</p><button data-clear-search>検索条件を解除</button>';
@@ -207,8 +208,9 @@ document.addEventListener("click", event => {
   const target = (event.target as Element).closest<HTMLElement>("button, a");
   if (!target) return;
   if (target.hasAttribute("data-research-save")) {
-    research.update({ saved: !research.state.saved }); notice(research.notice || "解説記事の保存内容を更新しました。"); render();
-    (document.querySelector<HTMLButtonElement>("[data-research-save]") ?? $("#search-input")).focus();
+    const entry = researchEntries.find(e => e.item.article.slug === target.dataset.researchSave); if (!entry) return;
+    entry.store.update({ saved: !entry.store.state.saved }); notice(entry.store.notice || "解説記事の保存内容を更新しました。"); render();
+    (document.querySelector<HTMLButtonElement>('[data-research-save="' + entry.item.article.slug + '"]') ?? $("#search-input")).focus();
   }
   if (target.dataset.perspective !== undefined) selectPerspective(Number(target.dataset.perspective));
   if (target.dataset.paper) {
@@ -276,4 +278,5 @@ document.addEventListener("keydown", event => {
 });
 window.addEventListener("popstate", () => syncFromUrl());
 syncFromUrl(true);
-if (initialNotice || research.notice) notice([initialNotice, research.notice].filter(Boolean).join(" "));
+const researchNotices = [...new Set(researchEntries.map(e => e.store.notice).filter(Boolean))];
+if (initialNotice || researchNotices.length) notice([initialNotice, ...researchNotices].filter(Boolean).join(" "));

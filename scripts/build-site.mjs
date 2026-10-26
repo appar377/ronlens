@@ -1,8 +1,9 @@
 import { cp, mkdir, rm, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { retrievalArticle } from "../dist/retrieval-article.js";
+import { publishedExplainers } from "../dist/research-catalog.js";
+import { initialResearchState } from "../dist/research-reader.js";
 import { researchPage } from "../dist/web/research-view.js";
-import { articleCanonical, articleMetadata } from "../dist/web/research-metadata.js";
+import { canonicalFor, metadataFor } from "../dist/web/research-metadata.js";
 import { escapeHtml } from "../dist/web/diagrams.js";
 const output = resolve("site");
 await rm(output, { recursive: true, force: true });
@@ -16,13 +17,16 @@ for (const route of ["library", "network", "saved", "help", "paper/demo-retrieva
   await mkdir(resolve(output, route), { recursive: true });
   await writeFile(resolve(output, route, "index.html"), innerHtml);
 }
-const articleRoute = "articles/" + retrievalArticle.slug;
-const articleMarkup = researchPage({ version: 1, saved: false, visited: false, view: { selected: "learning", expanded: ["learning", "retrieval-practice"] } }).replaceAll("<button ", "<button disabled data-boot-disabled ");
-const articleHtml = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(retrievalArticle.title)} | RONLENS</title>`)
-  .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${escapeHtml(retrievalArticle.summary)}">`)
-  .replace("</head>", `<link id="research-canonical" rel="canonical" href="${articleCanonical}"><script id="research-structured-data" type="application/ld+json">${JSON.stringify(articleMetadata).replaceAll("<", "\\u003c")}</script></head>`)
+for (const item of publishedExplainers) {
+const article = item.article;
+const articleRoute = "articles/" + article.slug;
+const articleMarkup = researchPage(initialResearchState(article), item).replaceAll("<button ", "<button disabled data-boot-disabled ");
+const articleHtml = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(article.title)} | RONLENS</title>`)
+  .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${escapeHtml(article.summary)}">`)
+  .replace("</head>", `<link id="research-canonical" rel="canonical" href="${canonicalFor(article)}"><script id="research-structured-data" type="application/ld+json">${JSON.stringify(metadataFor(article)).replaceAll("<", "\\u003c")}</script></head>`)
   .replace(/<body>[\s\S]*<\/body>/, `<body class="inner-page"><a class="brand" href="/">RONLENS</a><main class="app-main">${articleMarkup}<noscript><p class="noscript">本文と原論文リンクはそのまま読めます。概念の操作・保存にはJavaScriptを有効にしてください。</p></noscript></main></body>`);
 await mkdir(resolve(output, articleRoute), { recursive: true });
 await writeFile(resolve(output, articleRoute, "index.html"), articleHtml);
+}
 await writeFile(resolve(output, "404.html"), innerHtml);
 console.log("Built RONLENS static site in site/");

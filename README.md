@@ -9,9 +9,9 @@
 | --- | --- |
 | ホーム `/` | プリズムの7視点、検索、論文カード、保存 |
 | 一覧 `/library` | 語句・タグ検索、並び替え、条件の保存、0件からの回復 |
-| 実論文の解説 `/articles/retrieval-practice-versus-rereading` | 原論文2本の解説・条件・結果表・留保、用語マップ、DOIと全文へのリンク |
+| 実論文の解説 `/articles/{slug}` | 4記事・5原論文。条件・結果・限界・用語マップ、版と公開記録、原文へのリンク |
 | 詳細 `/paper/demo-retrieval` | 概念の選択・枝の開閉、親・同階層・全体図、説明・用語・架空原典 |
-| つながり `/network` | 実論文の確認済み引用1本と、別枠の架空引用2本・編集関連1本 |
+| つながり `/network` | 実論文の確認済み引用2本と、別枠の架空引用2本・編集関連1本 |
 | 保存 `/saved` | 保存論文、閲覧履歴、保存した検索からの再開 |
 | 案内 `/help` | 読む順序、操作方法、デモと保存の範囲 |
 | 404 | 未収録ページから検索・ホームへ戻る |
@@ -47,7 +47,7 @@ Vercelのビルド設定は [vercel.json](vercel.json) にあります。
 | [search.ts](src/search.ts) | NFKC正規化、語句・タグのAND検索、並び順 |
 | [workspace.ts](src/workspace.ts) | 検索と保存の状態遷移 |
 | [storage.ts](src/storage.ts) | localStorageの読込・保存・復元と破損保護 |
-| [retrieval-article.ts](src/retrieval-article.ts)、[research-article.ts](src/research-article.ts) | 出典確認済み解説と、原論文・サイト解説を分ける契約 |
+| [research-catalog.ts](src/research-catalog.ts)、[recent-articles.ts](src/recent-articles.ts)、[research-article.ts](src/research-article.ts) | 出典確認済み解説と、原論文・サイト解説を分ける契約 |
 | [research-reader.ts](src/research-reader.ts)、[research-view.ts](src/web/research-view.ts) | 実記事の検索・概念選択・独立したローカル保存と表示 |
 | [home-demo.ts](src/web/home-demo.ts) | 公開UIの架空3論文・15概念・3関係 |
 | [home.ts](src/web/home.ts)、[app.ts](src/web/app.ts) | ページ、URL、履歴、フォーカスの接続 |
@@ -70,3 +70,16 @@ Vercelのビルド設定は [vercel.json](vercel.json) にあります。
 [基盤検証](docs/verification.md)と[初期ホーム検証](docs/home-verification.md)は当時の履歴です。
 
 [実論文解説の仕様と検証](docs/research-article-handoff.md)に、出典と公開の境界を記載しています。
+
+
+## 2026-10-26の追加記事
+
+10月公開の研究から、AIと学習・情報の理解に関わる3本を選びました。公開日順の上位3本や、研究全体を網羅する選定ではありません。いずれもarXivのv1を読み、確認時点で査読済みの掲載は確認できていません。既存の記憶研究の記事は保持しています。
+
+- `/articles/ai-confidence-indicators-and-trust` — 信頼性表示と主観評価
+- `/articles/gelli-generated-language-practice` — 語彙・自信・発話を分ける比較
+- `/articles/expert-verified-ai-study-materials` — 教材へのアクセスと成績分布
+
+各記事の保存・履歴・概念の展開は別々です。既存記事の保存キーは変更しません。
+原文PDFや調査用の全文ファイルは公開repo・出力に含めず、原文へのリンクを置きます。
+調査と検証の詳細は [追加記事の検証記録](docs/recent-articles-verification.md) を参照してください。

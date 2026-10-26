@@ -12,6 +12,13 @@ export interface ResearchPaperReference {
   readonly fullTextUrl: string | null;
   readonly inspectedMaterial: "full-text" | "abstract-only";
   readonly publicationType: "journal-article" | "preprint";
+  readonly record?: {
+    readonly firstPublished: string;
+    readonly revisedOn: string | null;
+    readonly version: string;
+    readonly checkedOn: string;
+    readonly peerReview: "not-confirmed" | "peer-reviewed";
+  };
 }
 export interface EvidenceReference {
   readonly paperId: string;
@@ -19,6 +26,7 @@ export interface EvidenceReference {
   readonly locator: string;
   readonly supports: string;
   readonly verificationNote: string;
+  readonly url?: string;
 }
 export interface ExplainerSection {
   readonly id: string;
