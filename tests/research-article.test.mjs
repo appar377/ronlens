@@ -25,9 +25,18 @@ test('draft inspection refuses missing sources, incorrect concept parents, and a
  assert.equal(inspectArticleDraft({...draft,content:{...retrievalArticle,papers:[]}}).status,'needs-corrections');
  assert.equal(inspectArticleDraft({...draft,content:{...retrievalArticle,concepts:retrievalArticle.concepts.map(c=>({...c,parentId:c.id}))}}).status,'needs-corrections');
 });
+test('editorial readiness rejects unread full texts, impossible dates, and unsafe source references',()=>{
+ const first=retrievalArticle.papers[0];
+ const withPaper=p=>({...draft,content:{...retrievalArticle,papers:[p,retrievalArticle.papers[1]]}});
+ assert.equal(inspectArticleDraft(withPaper({...first,inspectedMaterial:'abstract-only'})).status,'needs-corrections');
+ assert.equal(inspectArticleDraft(withPaper({...first,fullTextUrl:null})).status,'needs-corrections');
+ assert.equal(inspectArticleDraft(withPaper({...first,record:{firstPublished:'2006-02-30',revisedOn:null,version:'掲載版',checkedOn:'2026-10-26',peerReview:'peer-reviewed'}})).status,'needs-corrections');
+ assert.equal(inspectArticleDraft(withPaper({...first,record:{firstPublished:'2006-03-01',revisedOn:null,version:'掲載版',checkedOn:'2026-10-26',peerReview:'peer-reviewed',integritySources:[{label:'更新情報',url:'javascript:alert(1)'}]}})).status,'needs-corrections');
+});
 test('search covers original authors, terminology, tags, and AND matching without mixing demo categories',()=>{
  const query=(text,tags=[])=>({text,tags,sort:'relevance'});
  assert.equal(researchMatches(query('Ｋａｒｐｉｃｋｅ 想起')),true);
+ assert.equal(researchMatches(query('10.1111/j.1467-9280.2006.01693.x')),true);
  assert.equal(researchMatches(query('自由再生',['学習・記憶'])),true);
  assert.equal(researchMatches(query('想起',['AI'])),false);
  assert.equal(researchMatches(query('想起 ない語xyz')),false);

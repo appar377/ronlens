@@ -1,6 +1,11 @@
 import type { ResearchExplainerContent } from './research-article.js';
 import { retrievalArticle, retrievalResults, researchGlossary, readingSteps } from './retrieval-article.js';
 import { trustArticle, gelliArticle, materialsArticle } from './recent-articles.js';
+import { medicalExplainer } from './field-medical.js';
+import { psychologyExplainer } from './field-psychology.js';
+import { economicsExplainer } from './field-economics.js';
+import { scienceExplainer } from './field-science.js';
+import { environmentExplainer } from './field-environment.js';
 import { deepFreeze } from './model.js';
 export interface ResearchTable {
   readonly sectionId: string;
@@ -24,6 +29,7 @@ export const retrievalExplainer: PublishedExplainer = deepFreeze({
 const term = (id: string, english: string, meaning: string) => ({ id, english, meaning });
 /** Only source-reviewed published content is registered. content/drafts is never imported. */
 export const publishedExplainers: readonly PublishedExplainer[] = deepFreeze([
+  medicalExplainer, psychologyExplainer, economicsExplainer, scienceExplainer, environmentExplainer,
   { article: trustArticle, cardSteps: ['表示を\n見る', '正誤を\n知る', '評価を\n比べる'], tables: [], glossary: [
     term('indicators', 'factuality indicators', '回答の正しさを判断するために添える表示。信頼度や出典の表示など。'),
     term('confidence', 'confidence', 'AIの回答に添えられた自信の表現。この実験の表示値は条件として操作したもので、モデルの正答確率を測った値ではありません。'),

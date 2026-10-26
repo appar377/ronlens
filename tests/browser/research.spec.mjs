@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 const article='/articles/retrieval-practice-versus-rereading';
 const node=(page,id)=>page.locator('.research-tree [data-research-concept="'+id+'"]');
 test('real explainer is discoverable separately from fictional demos on home, library, and saved search',async({page})=>{
- await page.goto('/');await expect(page.locator('.research-card')).toHaveCount(4);await expect(page.locator('.paper-card')).toHaveCount(3);
+ await page.goto('/');await expect(page.locator('.research-card')).toHaveCount(9);await expect(page.locator('.paper-card')).toHaveCount(3);
  await page.getByRole('searchbox').fill('想起練習');await page.getByRole('searchbox').press('Enter');await expect(page.locator('.research-card')).toBeVisible();await expect(page.locator('.paper-card')).toHaveCount(0);await expect(page.locator('#empty-state')).toBeHidden();
  await page.locator('#save-search').click();await page.goto('/saved?tab=searches');await page.locator('[data-apply-query]').click();await expect(page.getByRole('searchbox')).toHaveValue('想起練習');await expect(page.locator('.research-card')).toBeVisible();
  await page.locator('.research-card .primary-button').click();await expect(page).toHaveURL(article);await expect(page.locator('.research-header h1')).toContainText('読み返すより');await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href','https://ronlens.vercel.app'+article);await expect(page.locator('#research-structured-data')).toHaveCount(1);await page.locator('.research-header .back-link').click();await expect(page.locator('#research-structured-data')).toHaveCount(0);
@@ -42,7 +42,7 @@ test('unavailable/corrupt storage stays usable and reports persistence limits',a
 test('unknown article and concept routes recover through 404',async({page})=>{
  const response=await page.goto('/articles/missing');expect(response.status()).toBe(404);await expect(page.locator('#page-heading')).toContainText('見つかりません');
  await page.goto(article+'?concept=missing');await expect(page.locator('#page-heading')).toContainText('見つかりません');
- await page.locator('.not-found .primary-button').click();await expect(page.locator('.research-card')).toHaveCount(4);
+ await page.locator('.not-found .primary-button').click();await expect(page.locator('.research-card')).toHaveCount(9);
 });
 for(const width of [292,390,768,1126])test(`research pages and table reflow at ${width}`,async({page})=>{
  const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setViewportSize({width,height:844});
@@ -65,6 +65,6 @@ test('title ordering includes the real explainer alongside demos in library and 
  for(const path of ['/library?sort=title','/?sort=title']){
  await page.goto(path);await expect(page.locator('body')).toHaveAttribute('data-ready','true');
  const cards=path.startsWith('/library')?'.library-results>article h2':'#paper-grid>article h2';
- const titles=await page.locator(cards).allTextContents();expect(titles).toHaveLength(7);expect(titles).toEqual([...titles].sort((a,b)=>a.localeCompare(b,'ja')));
+ const titles=await page.locator(cards).allTextContents();expect(titles).toHaveLength(12);expect(titles).toEqual([...titles].sort((a,b)=>a.localeCompare(b,'ja')));
  }
 });

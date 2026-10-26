@@ -7,7 +7,7 @@ export const metadataFor = (article: ResearchExplainerContent) => ({
   description: article.summary, datePublished: article.publishedDate,
   inLanguage: 'ja', mainEntityOfPage: canonicalFor(article),
   author: { '@type': 'Organization', name: 'RONLENS' },
-  citation: article.papers.map(p => ({ '@type': 'ScholarlyArticle', name: p.title, url: p.primaryUrl, datePublished: p.record?.firstPublished ?? String(p.year), author: p.authors.map(name => ({ '@type': 'Person', name })) })),
+  citation: article.papers.map(p => ({ '@type': 'ScholarlyArticle', name: p.title, url: p.primaryUrl, datePublished: p.record?.firstPublished ?? String(p.year), author: p.authors.map(name => ({ '@type': p.collectiveAuthors ? 'Organization' : 'Person', name })) })),
 });
 export const articleCanonical = canonicalFor(retrievalArticle);
 export const articleMetadata = metadataFor(retrievalArticle);

@@ -1,0 +1,24 @@
+import {test,expect} from '@playwright/test';
+import {publishedExplainers} from '../../dist/research-catalog.js';
+const categories=['医療・健康','心理学','経済','自然科学','環境'];
+const fields=publishedExplainers.filter(e=>categories.includes(e.article.category));
+const path=a=>'/articles/'+a.slug;
+const node=(p,id)=>p.locator('.research-tree [data-research-concept="'+id+'"]');
+for(const item of fields)test('field article discovery, source version and DOI '+item.article.category,async({page,browser,baseURL})=>{
+ const a=item.article,paper=a.papers[0];await page.goto('/library');await page.locator('input[name="tag"][value="'+a.category+'"]').check();await expect(page.locator('.research-card')).toHaveCount(1);await expect(page.locator('.library-card')).toHaveCount(0);await page.locator('[data-save-query]').click();await page.goto('/saved?tab=searches');await page.locator('[data-apply-query]').click();await expect(page.locator('.research-card')).toHaveCount(1);await page.locator('.research-card .primary-button').click();await expect(page).toHaveURL(path(a));
+ await expect(page.locator('.research-header h1')).toHaveText(a.title);for(const source of a.papers){const record=page.locator('#'+source.id+' .source-record');await expect(record).toContainText(source.record.firstPublished);await expect(record).toContainText(source.record.version);await expect(record).toContainText('訂正・撤回');await expect(record).not.toContainText('arXiv提出日');}
+ const refs=await page.locator('#references a').evaluateAll(as=>as.map(a=>a.href));expect(refs).toContain(paper.primaryUrl);expect(refs).toContain(paper.fullTextUrl);
+ await page.goto('/?q='+encodeURIComponent(paper.doi));await expect(page.locator('.research-card')).toHaveCount(1);await expect(page.locator('.paper-card')).toHaveCount(0);
+ const nojs=await browser.newContext({javaScriptEnabled:false});try{const staticPage=await nojs.newPage();const response=await staticPage.goto(baseURL+path(a));expect(response.status()).toBe(200);await expect(staticPage.locator('h1')).toHaveText(a.title);await expect(staticPage.locator('.research-limitations')).toBeVisible();await expect(staticPage.locator('[data-research-save]')).toBeDisabled();}finally{await nojs.close()}
+});
+test('all five new fields preserve article-specific reading positions through related links, back and saved history',async({page})=>{
+ expect(fields).toHaveLength(5);await page.goto(path(fields[0].article));
+ for(let i=0;i<fields.length;i++){const a=fields[i].article;await node(page,a.concepts.at(-1).id).click();await page.locator('[data-research-save]').click();if(i<fields.length-1)await page.locator('.related-explainers a[href="'+path(fields[i+1].article)+'"]').click();}
+ for(let i=fields.length-2;i>=0;i--){await page.goBack();await expect(node(page,fields[i].article.concepts.at(-1).id)).toHaveAttribute('aria-pressed','true');await expect(page.locator('[data-research-save]')).toHaveAttribute('aria-pressed','true');}
+ await page.goto('/saved');await expect(page.locator('.research-card')).toHaveCount(5);await page.goto('/saved?tab=history');await expect(page.locator('.research-card')).toHaveCount(5);await page.locator('[data-article="'+fields[4].article.slug+'"] .primary-button').click();await expect(node(page,fields[4].article.concepts.at(-1).id)).toHaveAttribute('aria-pressed','true');await page.reload();await expect(node(page,fields[4].article.concepts.at(-1).id)).toHaveAttribute('aria-pressed','true');
+});
+for(const width of [292,390,768,1126])test('five field maps, bibliography and tables remain usable at '+width,async({page})=>{
+ await page.setViewportSize({width,height:844});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ for(const {article:a} of fields){await page.goto(path(a));await expect(page.locator('body')).toHaveAttribute('data-ready','true');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),a.slug).toBe(true);await expect(page.locator('.research-minimap')).toBeVisible();const siblings=await page.locator('.multi-branch-tree .research-branches > div > .research-branch-head').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return {x:r.x,y:r.y}}));expect(siblings).toHaveLength(3);if(width>=1000){expect(Math.max(...siblings.map(n=>n.y))-Math.min(...siblings.map(n=>n.y))).toBeLessThan(1)}else{expect(Math.max(...siblings.map(n=>n.x))-Math.min(...siblings.map(n=>n.x))).toBeLessThan(1);expect(siblings[2].y).toBeGreaterThan(siblings[1].y)}for(const wrap of await page.locator('.research-table-wrap').all()){await wrap.scrollIntoViewIfNeeded();const bounds=await wrap.boundingBox();expect(bounds.x+bounds.width).toBeLessThanOrEqual(width);await wrap.focus();await page.keyboard.press('ArrowRight');}await page.locator('.research-glossary button').first().click();await expect(page.locator('.research-tree button[aria-pressed="true"]')).toBeFocused();}
+ expect(errors).toEqual([]);
+});

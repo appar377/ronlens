@@ -9,7 +9,7 @@
 | --- | --- |
 | ホーム `/` | プリズムの7視点、検索、論文カード、保存 |
 | 一覧 `/library` | 語句・タグ検索、並び替え、条件の保存、0件からの回復 |
-| 実論文の解説 `/articles/{slug}` | 4記事・5原論文。条件・結果・限界・用語マップ、版と公開記録、原文へのリンク |
+| 実論文の解説 `/articles/{slug}` | 9記事。条件・結果・限界・用語マップ、出版・改訂・訂正確認の記録、原文へのリンク |
 | 詳細 `/paper/demo-retrieval` | 概念の選択・枝の開閉、親・同階層・全体図、説明・用語・架空原典 |
 | つながり `/network` | 実論文の確認済み引用2本と、別枠の架空引用2本・編集関連1本 |
 | 保存 `/saved` | 保存論文、閲覧履歴、保存した検索からの再開 |
@@ -83,3 +83,16 @@ Vercelのビルド設定は [vercel.json](vercel.json) にあります。
 各記事の保存・履歴・概念の展開は別々です。既存記事の保存キーは変更しません。
 原文PDFや調査用の全文ファイルは公開repo・出力に含めず、原文へのリンクを置きます。
 調査と検証の詳細は [追加記事の検証記録](docs/recent-articles-verification.md) を参照してください。
+
+## 分野を広げた5記事
+
+医療・健康、心理学、経済、自然科学、環境から、全文を読める研究を選びました。新しさだけを基準にせず、初学者が研究の問い・方法・結果・限界をたどれる形にしています。
+
+- `/articles/recovery-dexamethasone-who-benefits` — 対象集団と医療効果の数字
+- `/articles/many-smiles-facial-feedback` — 表情と感情、方法ごとの再現性
+- `/articles/cash-transfers-and-local-spillovers` — 家計への給付と地域への波及
+- `/articles/how-ligo-detected-gravitational-waves` — 観測・雑音評価・モデルによる推定
+- `/articles/where-plastic-waste-goes` — 累積廃棄物の分母と条件付き外挿
+
+分野別フィルタとDOI検索に対応しています。原文の出版・版情報と、訂正・撤回・追研究を確認した範囲を明示します。調査資料を読んだことを原データ再解析と呼びません。
+[選定・読解範囲・検証記録](docs/fields-articles-verification.md)を参照してください。

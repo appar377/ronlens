@@ -20,3 +20,23 @@
 
 .research-table .numeric{white-space:nowrap;overflow-wrap:normal;font-variant-numeric:tabular-nums}.wide-result-table{min-width:430px}
 .network-page>.research-citation-network{order:4}.research-card-art strong{flex-shrink:0}.research-card-art span{min-width:0}
+.source-authors{margin:0 0 18px;color:#536e91}.source-authors summary{cursor:pointer;min-height:28px;padding:5px 0}.source-authors p{margin-top:10px;font-size:12px;line-height:1.9}.source-record ul{padding-left:18px;margin:8px 0 0}.source-record li{margin:5px 0}
+
+/* Three or more siblings stay at one level; smaller maps use an indented tree. */
+.multi-branch-tree .research-branches{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:18px}
+.multi-branch-tree .research-branches>div,.multi-branch-tree .research-leaves>div{position:relative;min-width:0}
+.multi-branch-tree .research-branches>div:before{content:"";position:absolute;top:-20px;left:50%;height:20px;border-left:1px solid #b1cae9}
+.multi-branch-tree .research-leaves{position:relative}
+.multi-branch-tree .research-leaves:before{content:"";position:absolute;top:-22px;left:50%;height:22px;border-left:1px solid #b1cae9}
+.multi-branch-tree .research-leaves>div:before{content:"";position:absolute;top:-15px;left:50%;height:15px;border-left:1px solid #b1cae9}
+@media(max-width:999px){
+ .multi-branch-tree{text-align:left}.multi-branch-tree .research-tree-root:after{margin-left:17px;height:22px}
+ .multi-branch-tree .research-branches{display:block;border-top:0;border-left:1px solid #b1cae9;margin-left:17px;padding:0 0 0 20px}
+ .multi-branch-tree .research-branches>div{margin-bottom:18px}.multi-branch-tree .research-branches>div:last-child{margin-bottom:0}
+ .multi-branch-tree .research-branches>div:before{left:-20px;top:22px;width:20px;height:0;border-left:0;border-top:1px solid #b1cae9}
+ .multi-branch-tree .research-branch-head{justify-content:flex-start;height:auto}.multi-branch-tree .research-node{max-width:100%;min-width:0;text-align:left;height:auto}
+ .multi-branch-tree .research-leaves{display:block;border-top:0;border-left:1px solid #b1cae9;margin:12px 0 0 16px;padding:0 0 0 16px}
+ .multi-branch-tree .research-leaves:before{left:-1px;top:-12px;height:12px}
+ .multi-branch-tree .research-leaves>div{margin-bottom:10px}.multi-branch-tree .research-leaves>div:last-child{margin-bottom:0}
+ .multi-branch-tree .research-leaves>div:before{left:-16px;top:22px;width:16px;height:0;border-left:0;border-top:1px solid #b1cae9}
+}

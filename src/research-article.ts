@@ -10,6 +10,8 @@ export interface ResearchPaperReference {
   readonly doi: string | null;
   readonly primaryUrl: string;
   readonly fullTextUrl: string | null;
+  readonly fullTextLabel?: string;
+  readonly collectiveAuthors?: boolean;
   readonly inspectedMaterial: "full-text" | "abstract-only";
   readonly publicationType: "journal-article" | "preprint";
   readonly record?: {
@@ -18,6 +20,11 @@ export interface ResearchPaperReference {
     readonly version: string;
     readonly checkedOn: string;
     readonly peerReview: "not-confirmed" | "peer-reviewed";
+    readonly firstPublishedLabel?: string;
+    readonly revisionNote?: string;
+    readonly materialNote?: string;
+    readonly integrityNote?: string;
+    readonly integritySources?: readonly { readonly label: string; readonly url: string }[];
   };
 }
 export interface EvidenceReference {
@@ -27,11 +34,14 @@ export interface EvidenceReference {
   readonly supports: string;
   readonly verificationNote: string;
   readonly url?: string;
+  /** Use for a linked follow-up study so it is not mislabeled as the primary paper. */
+  readonly linkLabel?: string;
 }
 export interface ExplainerSection {
   readonly id: string;
   readonly title: string;
   readonly role: "context" | "method" | "finding" | "limitation" | "interpretation" | "example";
+  readonly interpretationBy?: "study-authors" | "site";
   readonly paragraphs: readonly string[];
   readonly evidence: readonly EvidenceReference[];
 }
@@ -103,12 +113,16 @@ export function inspectArticleDraft(draft: ResearchArticleDraft): DraftReadiness
     try { const parsed = new URL(value); if (parsed.protocol !== "https:" || parsed.username || parsed.password) throw new Error(); }
     catch { issues.push(name + "は認証情報を含まないHTTPS URLが必要です。"); }
   };
+  const date = (value: string, name: string): void => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value)) || new Date(value).toISOString().slice(0, 10) !== value) issues.push(name + "が不正です。");
+  };
   const uniqueIds = (items: readonly { readonly id: string }[], name: string): Set<string> => {
     const ids = new Set<string>();
     for (const item of items) { id(item.id, name); if (ids.has(item.id)) issues.push(name + "に重複IDがあります。"); ids.add(item.id); }
     return ids;
   };
   id(content.slug, "slug");
+  date(content.publishedDate, "解説公開日");
   for (const key of ["title", "summary", "audience", "centralQuestion"] as const) text(content[key], key);
   text(content.authorship.siteByline, "サイト側の署名");
   text(content.authorship.productionDisclosure, "制作方法の開示");
@@ -121,6 +135,13 @@ export function inspectArticleDraft(draft: ResearchArticleDraft): DraftReadiness
     if (!Number.isInteger(paper.year) || paper.year < 1000 || paper.year > 9999) issues.push("発表年が不正です。");
     if (paper.doi !== null && !/^10\.\d{4,9}\/\S+$/.test(paper.doi)) issues.push("DOIの形式が不正です。");
     url(paper.primaryUrl, "一次資料URL"); if (paper.fullTextUrl !== null) url(paper.fullTextUrl, "全文URL");
+    if (paper.inspectedMaterial !== "full-text" || !paper.fullTextUrl) issues.push("原論文全文の読解と全文URLが必要です。");
+    if (paper.record) {
+      date(paper.record.firstPublished, "原論文の公開記録日"); date(paper.record.checkedOn, "原文確認日");
+      if (paper.record.revisedOn !== null) date(paper.record.revisedOn, "改訂日");
+      text(paper.record.version, "確認した版");
+      for (const source of paper.record.integritySources ?? []) { text(source.label, "訂正等の確認先"); url(source.url, "訂正等の確認URL"); }
+    }
   }
   const sections = uniqueIds(content.sections, "sections");
   for (const role of ["method", "finding", "limitation"] as const) {
@@ -134,6 +155,7 @@ export function inspectArticleDraft(draft: ResearchArticleDraft): DraftReadiness
     for (const evidence of section.evidence) {
       if (!papers.has(evidence.paperId)) issues.push(section.id + "の出典IDが不明です。");
       text(evidence.locator, "出典箇所"); text(evidence.supports, "支持する主張"); text(evidence.verificationNote, "照合メモ");
+      if (evidence.url) url(evidence.url, "主張に対応する出典URL");
     }
   }
   const concepts = uniqueIds(content.concepts, "concepts");

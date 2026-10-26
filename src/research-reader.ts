@@ -32,7 +32,7 @@ export function toggleResearchBranch(view: ResearchView, id = 'retrieval-practic
 export function articleUrl(view?: ResearchView, article = retrievalArticle): string { return '/articles/' + article.slug + (view ? '?concept=' + encodeURIComponent(view.selected) : ''); }
 export function researchMatches(query: SearchQuery, article = retrievalArticle): boolean {
   const normalize = (s: string): string => s.normalize('NFKC').toLowerCase();
-  const searchable = normalize([article.title, article.summary, ...article.tags, ...article.papers.flatMap(p => [p.title, ...p.authors]), ...article.sections.flatMap(s => [s.title, ...s.paragraphs])].join(' '));
+  const searchable = normalize([article.title, article.summary, article.category, ...article.tags, ...article.papers.flatMap(p => [p.title, p.doi ?? '', ...p.authors]), ...article.sections.flatMap(s => [s.title, ...s.paragraphs])].join(' '));
   return normalize(query.text).split(/\s+/).filter(Boolean).every(word => searchable.includes(word)) && query.tags.every(tag => article.tags.some(own => normalize(own) === normalize(tag)));
 }
 export function researchStorageKey(article = retrievalArticle): string {
